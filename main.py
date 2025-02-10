@@ -6,23 +6,30 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, mean_squared_error
 import os
 
+xParams = ["LZP", "ROLZX", "RANK", "TEXT", "skip", "TPAQ", "BWTS", "LZ", "MTFT", "SRT", "X86", "checksum", "FPAQ", "RLT", "BWT", "TPAQX", "CM", "ZRLT", "Range", "ROLZ", "ANS0", "ANS1", "Huffman", "jobs"]
+yParam = ["time"]
+
 # Preprocessing functions (similar to Lab 1)
 def remove_html(text):
     """Remove HTML tags."""
-    html = re.compile(r'<.*?>')
-    return html.sub(r'', text)
+    if isinstance(text, str):  # Check if the value is a string
+        html = re.compile(r'<.*?>')
+        return html.sub(r'', text)
+    return text  # Return the value unchanged if it's not a string
 
 def remove_emoji(text):
     """Remove emojis."""
-    emoji_pattern = re.compile("[" 
-                               u"\U0001F600-\U0001F64F"  
-                               u"\U0001F300-\U0001F5FF"  
-                               u"\U0001F680-\U0001F6FF"  
-                               u"\U0001F1E0-\U0001F1FF"  
-                               u"\U00002702-\U000027B0"
-                               u"\U000024C2-\U0001F251"  
-                               "]+", flags=re.UNICODE)
-    return emoji_pattern.sub(r'', text)
+    if isinstance(text, str):
+        emoji_pattern = re.compile("[" 
+                                   u"\U0001F600-\U0001F64F"  
+                                   u"\U0001F300-\U0001F5FF"  
+                                   u"\U0001F680-\U0001F6FF"  
+                                   u"\U0001F1E0-\U0001F1FF"  
+                                   u"\U00002702-\U000027B0"
+                                   u"\U000024C2-\U0001F251"  
+                                   "]+", flags=re.UNICODE)
+        return emoji_pattern.sub(r'', text)
+    return text
 
 def clean_str(string):
     """Remove unwanted characters and convert to lowercase."""
@@ -40,7 +47,7 @@ def load_and_preprocess_data(path):
     df = df.sample(frac=1, random_state=42)  # Shuffle the data
     
     # Clean the relevant columns
-    df['cleaned_text'] = df['text'].apply(remove_html)
+    df['cleaned_text'] = df['TEXT'].apply(remove_html)  # Update this line to use 'TEXT' column
     df['cleaned_text'] = df['cleaned_text'].apply(remove_emoji)
     df['cleaned_text'] = df['cleaned_text'].apply(clean_str)
     
@@ -54,14 +61,14 @@ def evaluate_model(y_true, y_pred):
     return mape, mae, rmse
 
 # Path to the dataset (change to the appropriate dataset for each system/workload)
-dataset_path = 'path_to_dataset.csv'
+dataset_path = 'datasets/kanzi/ambivert.csv'
 
 # Load and preprocess data
 data = load_and_preprocess_data(dataset_path)
 
 # Set up the independent variables (configuration values) and dependent variable (performance)
-X = data.drop(columns=['performance', 'id', 'text', 'cleaned_text'])
-y = data['performance']
+X = data.drop(columns=xParams)
+y = data['time']
 
 # Initialize results list
 results = []
