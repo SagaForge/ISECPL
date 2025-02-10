@@ -1,4 +1,7 @@
-## Intelligent Software Engineering ##
+## ISE: Module  ##
+# Connor Howes #
+# SID: 2120773 #
 
+## Introduction ##
 
-## Configuration Performance Learning ##
+This projects implements a Configuration Performance Tuner
