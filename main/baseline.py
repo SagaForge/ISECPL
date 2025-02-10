@@ -3,7 +3,7 @@
 baseline.py
 -------
 
-Module for implementing a standard Random Search baseline for CPT prior to tuning. Implements:
+Module for implementing a simple Random Search baseline for CPT prior to tuning. Implements:
 
     * Random Search Baseline, given the path to the dataset, some budget b and minimising / maximising parameter. 
 

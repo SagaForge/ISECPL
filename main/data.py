@@ -50,6 +50,9 @@ class DataCleaner:
         for col in self.cleaned_df.select_dtypes(include=['object']).columns:
             self.cleaned_df[col] = self.cleaned_df[col].apply(clean_text)
         return self.cleaned_df
+    
+    def appropriate_datatypes(self):
+        """assigns appropriate datatypes to columns"""
 
     def detect_outliers(self):
         """Detect outliers using two statistical tests: Z-Score and IQR, with more conservative thresholds."""
