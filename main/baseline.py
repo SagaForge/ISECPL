@@ -3,9 +3,9 @@
 baseline.py
 -------
 
-Module for implementing a standard Random Search baseline for CPT prior to tuning:
+Module for implementing a standard Random Search baseline for CPT prior to tuning. Implements:
 
-    * Random Search Baseline, given some budget b
+    * Random Search Baseline, given the path to the dataset, some budget b and minimising / maximising parameter. 
 
 Returns the entire, best configurgation found by Random Search. 
     
@@ -29,6 +29,9 @@ class RandomSearchBaseline:
         self.minimize = minimize
         self.best_config = None
         self.best_performance = np.inf if minimize else -np.inf
+        
+        # Exclude columns containing 'interaction' in the name
+        self.feature_columns = [col for col in self.dataset.columns[:-1] if 'interaction' not in col]
 
     def random_search(self):
         """
@@ -37,7 +40,7 @@ class RandomSearchBaseline:
         sampled_indices = np.random.choice(self.dataset.index, self.budget, replace=False)
         
         for idx in sampled_indices:
-            config = self.dataset.loc[idx, self.dataset.columns[:-1]].to_dict()
+            config = self.dataset.loc[idx, self.feature_columns].to_dict()
             performance = self.dataset.loc[idx, self.dataset.columns[-1]]
             
             if self._is_better(performance):
