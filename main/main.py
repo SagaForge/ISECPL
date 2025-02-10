@@ -4,7 +4,6 @@
 from data import DataCleaner ## data.py, cleans data prior to CPT
 from baseline import RandomSearchBaseline ## baseline.py, for Random Search baseline
 
-
 pathToDataset = ""
 
 def main():
