@@ -3,15 +3,17 @@
 data.py
 -------
 
-Responsible for cleaning data prior to performance tuning. It leverages:
+Data cleaning pipeline used prior to performance tuning. It leverages:
 
-    * Contextual Outlier Detection
-    * Imputation of Missing Values using Mean Average
-    * Dynamic Feature Interaction Generation
-    * VIF Detection for Multicolinerarity 
-    * Performance Scaling
+    * Standard Regex Text Cleaning
+    * Outlier Detection & Removal (Using Z-Score + IQR)
+    * Imputation of Missing Values using Column Mean Average
+    * Automated Feature Interaction Generation (On a A x B basis per permutation)
+    * Logarithmic Performance Scaling
 
-Results are saved in /temp and the path to the cleaned data is returned.
+Cleaned data is saved to /temp/(dataset_name)_cleaned.csv and the path to the cleaned data is returned.
+
+Used by: main.py
 
 '''
 
@@ -58,8 +60,8 @@ class DataCleaner:
         z_outliers = (z_scores > 6).any(axis=1)  # Increased threshold to 6
 
         # IQR method with increased multiplier for IQR
-        Q1 = self.cleaned_df[numeric_cols].quantile(0.25)
-        Q3 = self.cleaned_df[numeric_cols].quantile(0.75)
+        Q1 = self.cleaned_df[numeric_cols].quantile(0.10)
+        Q3 = self.cleaned_df[numeric_cols].quantile(0.90)
         IQR = Q3 - Q1
         iqr_outliers = ((self.cleaned_df[numeric_cols] < (Q1 - 3 * IQR)) |  # Increased multiplier to 3
                         (self.cleaned_df[numeric_cols] > (Q3 + 3 * IQR))).any(axis=1)
@@ -90,16 +92,17 @@ class DataCleaner:
         return self.cleaned_df
 
     def generate_feature_interactions(self):
-        """Generate feature interactions automatically."""
+        """Generate feature interactions between numerical columns"""
         numeric_cols = self.cleaned_df.select_dtypes(include=[np.number]).columns
-        interaction_data = []  # To collect interaction columns in one go
+        interaction_data = {}  # Dictionary to store named interaction columns
 
         for (col1, col2) in combinations(numeric_cols, 2):
             interaction_col = f"{col1}_{col2}_interaction"
-            interaction_data.append(self.cleaned_df[col1] * self.cleaned_df[col2])
+            ## feature interactions generated on simple A x B basis (interaction analysis not performed here)
+            interaction_data[interaction_col] = self.cleaned_df[col1] * self.cleaned_df[col2]
 
-        # Concatenate all interaction columns at once
-        self.cleaned_df = pd.concat([self.cleaned_df] + interaction_data, axis=1)
+        # Concatenate all interaction columns at once with proper column names
+        self.cleaned_df = pd.concat([self.cleaned_df, pd.DataFrame(interaction_data)], axis=1)
         
         self.feature_interactions = len(list(combinations(numeric_cols, 2)))
         return self.cleaned_df

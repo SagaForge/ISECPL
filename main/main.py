@@ -1,4 +1,11 @@
+# PACKAGE IMPORTS #
+
+# LOCAL IMPORTS #
 from data import DataCleaner ## data.py, cleans data prior to CPT
+
+
+pathToDataset = ""
+
 
 def main():
     # Specify the path to the dataset
