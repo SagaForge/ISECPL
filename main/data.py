@@ -125,11 +125,11 @@ class DataCleaner:
         cleaned_path = self.save_cleaned_data()
 
         # Output summary
-        print("\nCleaning Report:")
-        print(f"    Total Data Removed: {self.removed_data + self.outliers_removed} rows")
-        print(f"    Imputed Values: {self.imputed_values} values")
-        print(f"    Outliers Removed: {self.outliers_removed} rows")
-        print(f"    Feature Interaction Generations: {self.feature_interactions} interactions")
-        print(f"    Cleaned dataset saved as: {cleaned_path}\n")
+        print("\n[data.py] <INFO> Cleaning Report:")
+        print(f"            Total Data Removed: {self.removed_data + self.outliers_removed} rows")
+        print(f"            Imputed Values: {self.imputed_values} values")
+        print(f"            Outliers Removed: {self.outliers_removed} rows")
+        print(f"            Feature Interaction Generations: {self.feature_interactions} interactions")
+        print(f"            Cleaned dataset saved as: {cleaned_path}\n")
         return cleaned_path
 
