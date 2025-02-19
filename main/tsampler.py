@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 class Sampler:
-    def __init__(self, dataset_path, budget, performance_col=None, minimize=True):
+    def __init__(self, dataset_path, budget=1000, inital_sample=0.5, performance_col=None, minimize=True):
         """
         Initializes the tuning algorithm with a budget and dataset.
         
@@ -27,6 +27,8 @@ class Sampler:
         :param dataset: DataFrame containing the configuration data.
         """
         self.budget = budget
+        self.original_budget = budget # for reporting purposes
+
         self.dataset = pd.read_csv(dataset_path)
         self.pureDataset = self.dataset.loc[:, ~self.dataset.columns.str.contains('interaction')] # Dataset without interactions WITH performance
         self.features = self.pureDataset.columns[:-1]  # Exclude last column (performance)
@@ -36,6 +38,8 @@ class Sampler:
         self.floatChunkSize = 5
         self.feature_sample_sizes = None
         self.allocted_samples = None
+
+        self.initalSample = inital_sample
 
         if performance_col:
             self.performance_col = performance_col
@@ -83,7 +87,7 @@ class Sampler:
         num_features = len(self.features)
         
         # Allocate 500 budget (as per your example) for feature sampling
-        feature_budget = 500
+        feature_budget = int(self.budget * self.initalSample)
         feature_alloc = feature_budget // num_features  # Even allocation among features initially
         
         # Allocate samples for each feature based on type and available budget
