@@ -26,12 +26,11 @@ class Sampler:
         :param budget: Total budget available for sampling.
         :param dataset: DataFrame containing the configuration data.
         """
-        self.budget = budget
-        self.original_budget = budget # for reporting purposes
+
 
         self.dataset = pd.read_csv(dataset_path)
-        self.pureDataset = self.dataset.loc[:, ~self.dataset.columns.str.contains('interaction')] # Dataset without interactions WITH performance
-        self.features = self.pureDataset.columns[:-1]  # Exclude last column (performance)
+        self.pure_dataset = self.dataset.loc[:, ~self.dataset.columns.str.contains('interaction')] # Dataset without interactions WITH performance
+        self.features = self.pure_dataset.columns[:-1]  # Exclude last column (performance)
         self.feature_types = self._detect_feature_types()
 
         self.intChunkSize = 5
@@ -39,13 +38,23 @@ class Sampler:
         self.feature_sample_sizes = None
         self.allocted_samples = None
 
-        self.initalSample = inital_sample
+        self.initial_sample = inital_sample
+        self.staged = False
+
+        # Tracking Stats
+        self.pops = 0
+        self.total_samples = 0
+        self.blind_samples = 0
+        self.observed_samples = 0
+        self.original_size = len(self.pure_dataset)
+        self.budget = budget
+        self.original_budget = budget # for reporting purposes
 
         if performance_col:
             self.performance_col = performance_col
         else:
             # Assume last column is performance and drop 'interaction' columns
-            self.performance_col = self.pureDataset.columns[-1]
+            self.performance_col = self.pure_dataset.columns[-1]
 
             print("[tsampler.py] <INFO> No column provided, assuming last table column as performance metric, found: ", self.performance_col)
 
@@ -87,7 +96,7 @@ class Sampler:
         num_features = len(self.features)
         
         # Allocate 500 budget (as per your example) for feature sampling
-        feature_budget = int(self.budget * self.initalSample)
+        feature_budget = int(self.budget * self.initial_sample)
         feature_alloc = feature_budget // num_features  # Even allocation among features initially
         
         # Allocate samples for each feature based on type and available budget
@@ -171,39 +180,6 @@ class Sampler:
 
         print("[tsampler.py] <INFO> Sampling allocation complete, ready to sample using (feature: {allocations}): ", self.allocted_samples)
     
-
-    def blind_random_sample(self, pop=False, specific_dict=None):
-        allocations = self.allocted_samples if specific_dict is None else specific_dict
-        sampled_rows = []
-        used_indices = set()
-
-        for feature, allocations in allocations.items():
-            for value, count in allocations.items():
-                if isinstance(value, str) and ',' in value:
-                    # Handle integer/float ranges
-                    lower, upper = map(float, value.split(','))
-                    filtered_rows = self.pureDataset[
-                        (self.pureDataset[feature] >= lower) & (self.pureDataset[feature] <= upper)
-                    ]
-                else:
-                    # Handle binary or categorical exact matches
-                    filtered_rows = self.pureDataset[self.pureDataset[feature] == value]
-
-                # Sample without replacement, ensuring we don't exceed available rows
-                available_indices = list(set(filtered_rows.index) - used_indices)
-                if available_indices:
-                    sampled_indices = np.random.choice(available_indices, size=min(count, len(available_indices)), replace=False)
-                    used_indices.update(sampled_indices)
-                    sampled_rows.append(self.pureDataset.loc[sampled_indices])
-
-                    # Remove sampled rows from dataset if pop=True
-                    if pop:
-                        self.pureDataset = self.pureDataset.drop(sampled_indices)
-
-        # Combine all sampled rows into a single DataFrame, dropping the performance column (blind)
-        sampled_df = pd.concat(sampled_rows).drop(columns=[self.performance_col], errors='ignore').drop_duplicates().reset_index(drop=True)
-        return sampled_df
-    
     def _budget_cost(self, val):
         if (val):
             self.budget -= val
@@ -211,7 +187,7 @@ class Sampler:
         else:
             print("[tsampler.py] <WARNING> Zero-cost sampling function called, budget remains unchanged - potential error")
 
-    def observed_random_sample(self, pop=False, specific_dict=None):
+    def observed_random_initial_sample(self, pop=False, specific_dict=None):
         allocations = self.allocted_samples if specific_dict is None else specific_dict
         sampled_rows = []
         used_indices = set()
@@ -221,32 +197,80 @@ class Sampler:
                 if isinstance(value, str) and ',' in value:
                     # Handle integer/float ranges
                     lower, upper = map(float, value.split(','))
-                    filtered_rows = self.pureDataset[
-                        (self.pureDataset[feature] >= lower) & (self.pureDataset[feature] <= upper)
+                    filtered_rows = self.pure_dataset[
+                        (self.pure_dataset[feature] >= lower) & (self.pure_dataset[feature] <= upper)
                     ]
                 else:
                     # Handle binary or categorical exact matches
-                    filtered_rows = self.pureDataset[self.pureDataset[feature] == value]
+                    filtered_rows = self.pure_dataset[self.pure_dataset[feature] == value]
 
                 # Sample without replacement, ensuring we don't exceed available rows
                 available_indices = list(set(filtered_rows.index) - used_indices)
                 if available_indices:
                     sampled_indices = np.random.choice(available_indices, size=min(count, len(available_indices)), replace=False)
                     used_indices.update(sampled_indices)
-                    sampled_rows.append(self.pureDataset.loc[sampled_indices])
+                    sampled_rows.append(self.pure_dataset.loc[sampled_indices])
 
                     # Remove sampled rows from dataset if pop=True
                     if pop:
-                        self.pureDataset = self.pureDataset.drop(sampled_indices)
+                        self.pure_dataset = self.pure_dataset.drop(sampled_indices)
 
         # Combine all sampled rows into a single DataFrame, dropping the performance column (blind)
         sampled_df = pd.concat(sampled_rows).drop_duplicates().reset_index(drop=True)
         self._budget_cost(len(sampled_df))
+        self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
         return sampled_df
+    
+    def blind_targetted_random_sample(self, feature, value, amount):
+        filtered_rows = self.pure_dataset[self.pure_dataset[feature] == value]
+        filtered_rows = self._avoid_duplicates(filtered_rows)
+        
+        sampled_rows = filtered_rows.sample(n=min(amount, len(filtered_rows)), replace=False)
+        self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
+        
+        return sampled_rows.drop(columns=[self.performance_col], errors='ignore').reset_index(drop=True)
 
 
-    def observed_feature_sample(self, feature_dict):
-        """Some code here, to be implemented"""
+    def random_sample(self, feature=None, value=None, amount=3, observed=None, pop=True):
+
+        rows = self.pure_dataset ## If no specific feature, sampling from entire dataset
+
+        if feature != None: ## Targetting a specific feature
+            if value != None:
+                rows = self.pure_dataset[self.pure_dataset[feature] == value]
+            else: ## No value provided, redundant call
+                print("[tsampler.py] <ERROR> Random sample called with feature but no value, need value assignment with feature")
+                return
+        
+        sampled_rows = rows.sample(n=min(amount, len(rows)), replace=False) ## Sample n rows (or the length if l < amount)
+
+        self.total_samples += len(sampled_rows)
+
+        if pop: ## Remove sampled data from pure dataset
+            self.pure_dataset = self.pure_dataset.drop(sampled_rows.index).reset_index(drop=True)
+            self.pops += len(sampled_rows)
+
+        if observed:
+            self._budget_cost(len(sampled_rows))
+            sampled_df = sampled_rows.drop_duplicates().reset_index(drop=True)
+            self.observed_samples += len(sampled_df)
+            return sampled_df
+        
+        sampled_df = sampled_rows.drop(columns=[self.performance_col], errors='ignore').reset_index(drop=True)
+        self.blind_samples += len(sampled_df)
+        
+        return sampled_df
+    
+    def print_stats(self):
+        budget_used = self.original_budget - self.budget
+        print("Sampling Summary")
+        print("=================")
+        print(f"Total Pops: {self.pops}")
+        print(f"Total Samples: {self.total_samples}, of which {self.blind_samples} Blind and {self.observed_samples} Observed")
+        print(f"Original Pure Size:  {self.original_size}, New Size: {len(self.pure_dataset)}")
+        print(f"Budget Used: {budget_used} / {self.original_budget} ({(budget_used / self.original_budget) * 100}%)")
+        print("=================")
+
    
 if __name__ == "__main__":
 
