@@ -220,16 +220,6 @@ class Sampler:
         self._budget_cost(len(sampled_df))
         self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
         return sampled_df
-    
-    def blind_targetted_random_sample(self, feature, value, amount):
-        filtered_rows = self.pure_dataset[self.pure_dataset[feature] == value]
-        filtered_rows = self._avoid_duplicates(filtered_rows)
-        
-        sampled_rows = filtered_rows.sample(n=min(amount, len(filtered_rows)), replace=False)
-        self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
-        
-        return sampled_rows.drop(columns=[self.performance_col], errors='ignore').reset_index(drop=True)
-
 
     def random_sample(self, feature=None, value=None, amount=3, observed=None, pop=True):
 
@@ -239,7 +229,7 @@ class Sampler:
             if value != None:
                 rows = self.pure_dataset[self.pure_dataset[feature] == value]
             else: ## No value provided, redundant call
-                print("[tsampler.py] <ERROR> Random sample called with feature but no value, need value assignment with feature")
+                print("[tsampler.py] <ERROR> Redundant sampling function called, must provide value when sampling a specific feature.")
                 return
         
         sampled_rows = rows.sample(n=min(amount, len(rows)), replace=False) ## Sample n rows (or the length if l < amount)
@@ -256,7 +246,7 @@ class Sampler:
             self.observed_samples += len(sampled_df)
             return sampled_df
         
-        sampled_df = sampled_rows.drop(columns=[self.performance_col], errors='ignore').reset_index(drop=True)
+        sampled_df = sampled_rows.drop(columns=[self.performance_col], errors='ignore').reset_index(drop=True) ## remove performance column
         self.blind_samples += len(sampled_df)
         
         return sampled_df
