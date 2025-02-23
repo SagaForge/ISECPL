@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 class Sampler:
-    def __init__(self, dataset_path, budget=1000, inital_sample=0.5, performance_col=None, minimize=True):
+    def __init__(self, dataset_path, budget=1000, inital_sample=0.5, performance_col=None, minimize=True, hook_func=None):
         """
         Initializes the tuning algorithm with a budget and dataset.
         
@@ -40,6 +40,7 @@ class Sampler:
 
         self.initial_sample = inital_sample
         self.staged = False
+        self.budget_hook = hook_func
 
         # Tracking Stats
         self.pops = 0
@@ -187,6 +188,11 @@ class Sampler:
         else:
             print("[tsampler.py] <WARNING> Zero-cost sampling function called, budget remains unchanged - potential error")
 
+    def has_budget(self):
+        if (self.budget > 0):
+            return True
+        return False
+
     def observed_random_initial_sample(self, pop=False, specific_dict=None):
         allocations = self.allocted_samples if specific_dict is None else specific_dict
         sampled_rows = []
@@ -214,11 +220,12 @@ class Sampler:
                     # Remove sampled rows from dataset if pop=True
                     if pop:
                         self.pure_dataset = self.pure_dataset.drop(sampled_indices)
+                        self.pops += len(sampled_rows)
 
         # Combine all sampled rows into a single DataFrame, dropping the performance column (blind)
         sampled_df = pd.concat(sampled_rows).drop_duplicates().reset_index(drop=True)
         self._budget_cost(len(sampled_df))
-        self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
+        #self.sampled_data = pd.concat([self.sampled_data, sampled_rows])
         return sampled_df
 
     def random_sample(self, feature=None, value=None, amount=3, observed=None, pop=True):
@@ -253,10 +260,10 @@ class Sampler:
     
     def print_stats(self):
         budget_used = self.original_budget - self.budget
-        print("Sampling Summary")
+        print("\nSampler Report")
         print("=================")
         print(f"Total Pops: {self.pops}")
-        print(f"Total Samples: {self.total_samples}, of which {self.blind_samples} Blind and {self.observed_samples} Observed")
+        print(f"Total Samples Given: {self.total_samples}, of which {self.blind_samples} Blind and {self.observed_samples} Observed")
         print(f"Original Pure Size:  {self.original_size}, New Size: {len(self.pure_dataset)}")
         print(f"Budget Used: {budget_used} / {self.original_budget} ({(budget_used / self.original_budget) * 100}%)")
         print("=================")
