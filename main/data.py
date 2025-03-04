@@ -94,22 +94,6 @@ class DataCleaner:
         self.imputed_values += imputed_data
         return self.cleaned_df
 
-    def generate_feature_interactions(self):
-        """Generate feature interactions between numerical columns"""
-        numeric_cols = self.cleaned_df.select_dtypes(include=[np.number]).columns
-        interaction_data = {}  # Dictionary to store named interaction columns
-
-        for (col1, col2) in combinations(numeric_cols, 2):
-            interaction_col = f"{col1}_{col2}_interaction"
-            ## feature interactions generated on simple A x B basis (interaction analysis not performed here)
-            interaction_data[interaction_col] = self.cleaned_df[col1] * self.cleaned_df[col2]
-
-        # Concatenate all interaction columns at once with proper column names
-        self.cleaned_df = pd.concat([self.cleaned_df, pd.DataFrame(interaction_data)], axis=1)
-        
-        self.feature_interactions = len(list(combinations(numeric_cols, 2)))
-        return self.cleaned_df
-
     def save_cleaned_data(self):
         """Save the cleaned dataset to the specified directory."""
         # Get the cleaned file path
@@ -124,7 +108,6 @@ class DataCleaner:
         self.clean_symbols_and_texts()
         self.detect_outliers()
         self.impute_missing_values()
-        self.generate_feature_interactions()
         cleaned_path = self.save_cleaned_data()
 
         # Output summary
@@ -132,7 +115,6 @@ class DataCleaner:
         print(f"            Total Data Removed: {self.removed_data + self.outliers_removed} rows")
         print(f"            Imputed Values: {self.imputed_values} values")
         print(f"            Outliers Removed: {self.outliers_removed} rows")
-        print(f"            Feature Interaction Generations: {self.feature_interactions} interactions")
         print(f"            Cleaned dataset saved as: {cleaned_path}\n")
         return cleaned_path
 

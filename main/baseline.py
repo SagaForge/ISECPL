@@ -27,7 +27,7 @@ class RandomSearchBaseline:
         :param minimize: Boolean indicating whether to minimize or maximize performance
         """
         self.dataset = pd.read_csv(dataset_path)
-        self.budget = min(budget, len(self.dataset))  # Ensure budget does not exceed dataset size
+        self.budget = int(min(budget, len(self.dataset)))  # Ensure budget does not exceed dataset size
         self.minimize = minimize
 
         # Remove Interaction Columns (as this is the baseline, no need to analyse interaction features)
@@ -36,13 +36,11 @@ class RandomSearchBaseline:
         if performance_col:
             self.performance_col = performance_col
         else:
-            print("[baseline.py] <INFO> No column provided, assuming last table column as performance metric")
+            #print("[baseline.py] <INFO> No column provided, assuming last table column as performance metric")
             # Assume last column is performance and drop 'interaction' columns
             
             self.performance_col = self.dataset.columns[-1]
-            print("[baseline.py] <INFO> Column Metric Found: ", self.dataset.columns[-1])
-
-        print("[baseline.py] <INFO> Using Non-Interaction Features Only: ", ', '.join(c for c in self.dataset.columns))
+            #print("[baseline.py] <INFO> Column Metric Found: ", self.dataset.columns[-1])
 
         self.best_config = None
         self.best_performance = np.inf if minimize else -np.inf
