@@ -1,4 +1,4 @@
-# Hierarchal Gaussian Adaptvie Sampling with Diversification for Configuration Performance Tuning #
+# Hierarchal Gaussian Adaptive Sampling with Diversification for Configuration Performance Tuning #
 ## ISE Tool Building Project Submission ##
 ## SID: 2120773 ##
 
