@@ -1,11 +1,7 @@
 import numpy as np
 import pandas as pd
 from tsampler import Sampler
-import networkx as nx
-import matplotlib.pyplot as plt
 import numpy as np
-from collections import defaultdict
-import time
 import traceback
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
@@ -110,18 +106,13 @@ class ConfigTuner:
         self.highest_performance_feature = None
         self.lowest_performance_feature = None
 
-
-        # Gaussian Essentials
-        #self.gp = GaussianProcessRegressor(kernel=ConstantKernel(1.0) * RBF(length_scale=1.0), alpha=1e-5)
-        # Increase max_iter in the GaussianProcessRegressor
         self.gp = GaussianProcessRegressor(
             kernel=ConstantKernel(1.0) * RBF(length_scale=1.0),
-            n_restarts_optimizer=10,  # Increase the number of restarts
-            optimizer='fmin_l_bfgs_b',  # Use L-BFGS-B optimizer
+            n_restarts_optimizer=10, 
+            optimizer='fmin_l_bfgs_b',
             random_state=42,
-            alpha=1e-5,  # Add a small noise term to improve stability
-            normalize_y=True  # Normalize the target variable (performance)
-            #max_iter=1000  # Increase the maximum number of iterations
+            alpha=1e-5, 
+            normalize_y=True
         )
 
 
@@ -165,11 +156,6 @@ class ConfigTuner:
                 subset = sampled_data[sampled_data[feature] == value]
                 avg_perf = float(subset[self.sampler.performance_col].mean())
                 feature_performance[feature][value] = float(avg_perf)
-
-            #print("F", feature)
-            #print(self.sampler.feature_types)
-            #print(self.sampler.allocated_samples)
-            #print(sampled_data[feature])
                 
             best_value = min(feature_performance[feature], key=feature_performance[feature].get)
             best_avg_perf = feature_performance[feature][best_value]
@@ -376,13 +362,3 @@ class ConfigTuner:
 
             traceback.print_exc()
 
-
-
-if __name__ == "__main__":
-    tuner = ConfigTuner(dataset_path="/home/connor/university/isecpl/temp/LLVM_cleaned.csv", budget=500, initial_sample=0.2, performance_col=None)
-
-    tuner.run(4)
-
-    tuner.tuning_report() # print results
-
-    tuner.sampler.print_stats()

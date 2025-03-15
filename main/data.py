@@ -8,8 +8,6 @@ Data cleaning pipeline used prior to performance tuning. It leverages:
     * Standard Regex Text Cleaning
     * Outlier Detection & Removal (Using Z-Score + IQR)
     * Imputation of Missing Values using Column Mean Average
-    * Automated Feature Interaction Generation (On a A x B basis per permutation)
-    * Logarithmic Performance Scaling
 
 Cleaned data is saved to /temp/(dataset_name)_cleaned.csv and the path to the cleaned data is returned.
 
@@ -22,7 +20,6 @@ import numpy as np
 import re
 from scipy import stats
 from sklearn.impute import SimpleImputer
-from itertools import combinations
 import os
 
 class DataCleaner:
@@ -58,21 +55,18 @@ class DataCleaner:
         """Detect outliers using two statistical tests: Z-Score and IQR, with more conservative thresholds."""
         numeric_cols = self.cleaned_df.select_dtypes(include=[np.number]).columns
 
-        # Z-Score method with increased threshold
         z_scores = np.abs(stats.zscore(self.cleaned_df[numeric_cols], nan_policy='omit'))
-        z_outliers = (z_scores > 6).any(axis=1)  # Increased threshold to 6
+        z_outliers = (z_scores > 6).any(axis=1)
 
-        # IQR method with increased multiplier for IQR
         Q1 = self.cleaned_df[numeric_cols].quantile(0.10)
         Q3 = self.cleaned_df[numeric_cols].quantile(0.90)
         IQR = Q3 - Q1
-        iqr_outliers = ((self.cleaned_df[numeric_cols] < (Q1 - 3 * IQR)) |  # Increased multiplier to 3
+        iqr_outliers = ((self.cleaned_df[numeric_cols] < (Q1 - 3 * IQR)) |
                         (self.cleaned_df[numeric_cols] > (Q3 + 3 * IQR))).any(axis=1)
 
-        # Combine outliers from both methods
         outliers = z_outliers | iqr_outliers
 
-        # Count rows before and after outlier removal
+
         rows_before = self.cleaned_df.shape[0]
         self.cleaned_df = self.cleaned_df[~outliers]
         rows_after = self.cleaned_df.shape[0]
@@ -99,7 +93,7 @@ class DataCleaner:
         # Get the cleaned file path
         base_name = os.path.basename(self.dataset_path)
         name, ext = os.path.splitext(base_name)
-        cleaned_path = os.path.join('/home/connor/university/isecpl/temp/', f"{name}_cleaned{ext}")
+        cleaned_path = os.path.join('/temp', f"{name}_cleaned{ext}")
         self.cleaned_df.to_csv(cleaned_path, index=False)
         return cleaned_path
     

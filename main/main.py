@@ -3,7 +3,7 @@
 main.py
 -------
 
-Module for implementing the whole pipeline of data cleaning and performance tuning
+Module for executing the whole pipeline of data cleaning and performance tuning
 
     * Random Search Baseline, given the path to the dataset, some budget b and minimising / maximising parameter. 
 
@@ -16,8 +16,7 @@ Used by: none
 # LOCAL IMPORTS #
 from data import DataCleaner ## data.py, cleans data prior to CPT
 from baseline import RandomSearchBaseline ## baseline.py, for Random Search baseline
-from tsampler import Sampler
-from tuner import ConfigTuner, PerformanceLinkedList, FeatureNode
+from tuner import ConfigTuner
 
 import os
 import pandas as pd
@@ -81,7 +80,7 @@ def hras(path, runs, budgets, initial_sample, mode):
 
 def main():
     # Specify the path to the dataset
-    datasets_path = '/home/connor/university/isecpl/datasets/' # path to datasets folder
+    datasets_path = 'results' # path to datasets folder
 
     # Create an empty DataFrame with the desired columns
     results_df = pd.DataFrame(columns=[
@@ -91,13 +90,13 @@ def main():
         'Best_Algorithm'  # Column to indicate the best algorithm
     ])
 
-    runs = 1    # how many runs to do per budget 
-    budgets = [500] # what budgets to iterate through
+    runs = 3    # how many runs to do per budget 
+    budgets = [100, 500, 1000] # what budgets to iterate through
 
-    hras_standard_is = 0.4
-    hras_adaptive_is = 0.4
-    hras_ae_is = 0.4
-    hras_adaptive_gaussian_is = 0.4
+    hras_standard_is = 0.6
+    hras_adaptive_is = 0.6
+    hras_ae_is = 0.6
+    hras_adaptive_gaussian_is = 0.6
 
     for filename in os.listdir(datasets_path):
         file_path = os.path.join(datasets_path, filename)
@@ -162,6 +161,8 @@ def main():
 
                     # Append the new row to the results DataFrame using pd.concat
                     results_df = pd.concat([results_df, new_row], ignore_index=True)
+
+                    new_row.to_csv("results/results.csv", mode='a', header=False, index=False)
 
                 print(f"Processed dataset: {filename}")
 

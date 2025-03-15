@@ -179,12 +179,9 @@ class Sampler:
         self.feature_sample_sizes = self._get_feature_sample_sizes()
         self.allocated_samples = self._allocate_samples(self.feature_sample_sizes)
 
-        #print("[tsampler.py] <INFO> Sampling allocation complete, ready to sample using (feature: {allocations}): ", self.allocated_samples)
-    
     def _budget_cost(self, val):
         if (val):
             self.budget -= val
-            #print("[tsampler.py] <INFO> Observed sampling function called, deducting ", val, " from budget. New budget: ", self.budget)
         elif (val <= 0 and self.has_budget()):
             self.budget -= 1 # assume somewhere has rounded down the budget.
         else:
@@ -208,7 +205,7 @@ class Sampler:
                 on=list(blind_samples.columns),  # Match on all feature columns
                 how='left'
             )
-            # Ensure only the performance column is added
+            # ensure only the performance column is added
             observed_samples = merged_samples[list(blind_samples.columns) + [self.performance_col]]
             self._budget_cost(len(observed_samples)) # ensure we deduct from budget
             self.observed_samples += len(observed_samples)
@@ -220,13 +217,6 @@ class Sampler:
             return blind_samples
 
     def observed_random_initial_sample(self, pop=False, specific_dict=None):
-        """
-        Samples rows from the dataset based on the allocations provided in the `allocations` dictionary.
-        
-        :param pop: If True, removes the sampled rows from the dataset (default: False).
-        :param specific_dict: A custom allocation dictionary to use instead of `self.allocated_samples` (default: None).
-        :return: A DataFrame containing the sampled rows.
-        """
         # Use the provided allocation dictionary or fall back to the default one
         allocations = self.allocated_samples if specific_dict is None else specific_dict
         sampled_rows = []
