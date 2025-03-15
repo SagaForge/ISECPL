@@ -5,7 +5,7 @@
 
 ## Introduction ##
 
-This project implements a Configuration Performance Tuner for the Intelligent Software Engineering module, UoB. Usage and instructions (the required *manual*, *replication* and *requirements* submissions) can be found under the *pdfs* folder. 
+This project implements a Configuration Performance Tuner for the Intelligent Software Engineering module. Usage and instructions (the required *manual*, *replication* and *requirements* submissions) can be found under the *pdfs* folder. 
 
 If there are issues with the code, please check Python dependencies and file paths (declared in main.py and data.py).
 
